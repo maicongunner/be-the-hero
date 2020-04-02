@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useHistory } from 'react-router-dom';
 import { FiPower, FiTrash2 } from 'react-icons/fi';
+import { toast } from 'react-toastify';
 
 import api from '../../Services/api';
 
 import logoImg from '../../assets/logo.svg';
 
-import './styles.css';
+import { ProfileContainer } from  './styles';
 
 export default function Profile() {
 
@@ -33,10 +34,11 @@ export default function Profile() {
         headers: {
           Authorization: ongID
         }
-      });
+      });      
       setIncidents(incidents.filter(incident => incident.id !== id));
+      toast.success('Caso excluído com sucesso!');
     } catch (error) {
-      alert('Erro ao deletar caso, tente novamente');
+      toast.error(error.response.data.message, { autoClose: 10000 });
     }
   }
 
@@ -46,7 +48,7 @@ export default function Profile() {
   }
 
   return (
-    <div className="profile-container">
+    <ProfileContainer>
       <header>
         <img src={logoImg} alt="Be The Hero"/>
         <span>Bem vinda, {ongName}</span>
@@ -78,6 +80,6 @@ export default function Profile() {
         ))}
       </ul>
 
-    </div>
+    </ProfileContainer>
   );
 }

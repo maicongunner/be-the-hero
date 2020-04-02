@@ -1,30 +1,47 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link, useHistory } from 'react-router-dom';
 import api from '../../Services/api';
+import { toast } from 'react-toastify';
+import TextInputMask from 'react-masked-text';
+
+import { Formik, Form, Field } from 'formik';
+import * as Yup from 'yup';
 
 import { FiArrowLeft } from 'react-icons/fi';
 
 import logoImg from '../../assets/logo.svg';
 
-import './styles.css';
+import { NewIncidentContainer} from './styles';
 
 export default function NewIncident() {
-
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [value, setValue] = useState('');
 
   const ongID = localStorage.getItem('ongId');
 
   const history = useHistory();
 
-  async function handleNewIncident(e) {
-    e.preventDefault();
+  const RegisterSchema = Yup.object().shape({
+    title: Yup.string()
+    .min(5, 'Informe no mínimo 10 caracteres')
+    .max(100, 'Informe no máximo 100 caracteres')
+    .required('Campo obrigatório'),
+    description: Yup.string()
+      .min(10, 'Informe no mínimo 10 caracteres')
+      .max(500, 'Informe no máximo 500 caracteres')
+      .required('Campo obrigatório'),
+    value: Yup.string()
+    .required('Campo obrigatório')
+  });
+
+  async function handleNewIncident(values) {
+    
+    const {title, description, value } = values;
+
+    const valueNew = Number(value.replace(/\.|R\$/g, '').replace(/,/g, '.'));
 
     const data = {
       title,
       description,
-      value,
+      value: valueNew,
     };
 
     try {
@@ -33,15 +50,16 @@ export default function NewIncident() {
           Authorization: ongID,
         }        
       }); 
+      toast.success('Caso cadastrado com sucesso!');
       history.push('/profile');
     } catch (error) {
-      alert('Erro ao cadastrar o caso');
+      toast.error(error.response.data, { autoClose: 10000 });
     }
 
   }
 
   return (
-    <div className="new-incident-container">
+    <NewIncidentContainer>
       <div className="content">
         <section>
           <img src={logoImg} alt="Be The Hero"/>
@@ -54,26 +72,72 @@ export default function NewIncident() {
             Voltar para home
           </Link>
         </section>
-        <form onSubmit={handleNewIncident}>
-          <input 
-            placeholder="Titulo do caso" 
-            value={title}
-            onChange={e => setTitle(e.target.value)}  
-          />
-          <textarea 
-            placeholder="Descrição" 
-            value={description}
-            onChange={e => setDescription(e.target.value)}
-          />
-          <input 
-            placeholder="Valor em reais" 
-            value={value}
-            onChange={e => setValue(e.target.value)}
-          />
 
-          <button className="button" type="submit">Cadastrar</button>
-        </form>
+        <Formik
+          initialValues={{
+            title: '',
+            description: '',
+            value: ''
+          }}
+          validationSchema={RegisterSchema}
+          onSubmit={handleNewIncident}
+        >
+
+        {formikProps => (
+          <Form autoComplete="off">
+            <div className="box-field">
+              <Field 
+                name="title"
+                onChange={formikProps.handleChange('title')}
+                onBlur={formikProps.handleBlur('title')}
+                placeholder="Título do caso"
+                className={ formikProps.errors.title ? 'input-error' : ''}                
+              />
+              {formikProps.errors.title && formikProps.touched.title ? (
+                <span className="message-error">{formikProps.errors.title}</span>
+              ) : null}
+            </div> 
+
+            <div className="box-field">
+              <Field
+                component="textarea" 
+                name="description"
+                onChange={formikProps.handleChange('description')}
+                onBlur={formikProps.handleBlur('description')}
+                placeholder="Descrição do caso"
+                className={ formikProps.errors.description ? 'input-error' : ''}                
+              />
+              {formikProps.errors.description && formikProps.touched.description ? (
+                <span className="message-error">{formikProps.errors.description}</span>
+              ) : null}
+            </div>   
+
+            <div className="box-field">
+              <Field                   
+                name="value"
+                render={({ field }) => (
+                  <TextInputMask      
+                    {...field}
+                    onChangeText={(text) => field.onChange({target: {value: text, name: "value"}})}               
+                    kind={'money'}    
+                    options={{
+                      format: 'R$ 0,00'
+                    }} 
+                    placeholder="Valor do caso"      
+                    className={ formikProps.errors.value ? 'input-error' : ''}      
+                  />
+                )}
+              />                
+              {formikProps.errors.value && formikProps.touched.value ? (
+                <span className="message-error">{formikProps.errors.value}</span>
+              ) : null}
+            </div>
+            <button type="submit" className="button">Salvar</button>
+          </Form>
+        )}
+        </Formik>
+
       </div>
-    </div>
+    </NewIncidentContainer>
   );
 } 
